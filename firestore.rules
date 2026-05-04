@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Path Variable Hardening
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return true; // Authentication removed for guest experience
+    }
+
+    function isOwner(userId) {
+      return userId == 'guest_user';
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 2. Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'weight', 'goal', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.uid == 'guest_user' &&
+             data.email is string && data.email.size() <= 256 &&
+             data.weight is number && data.weight > 0 && data.weight < 500 &&
+             data.goal in ['lose_weight', 'maintain', 'gain_muscle'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidWorkout(data) {
+      return data.keys().hasAll(['userId', 'exercise', 'sets', 'caloriesBurned', 'timestamp']) &&
+             data.userId == 'guest_user' &&
+             data.exercise is string && data.exercise.size() <= 100 &&
+             data.sets is list && data.sets.size() > 0 && data.sets.size() <= 50 &&
+             data.caloriesBurned is number && data.caloriesBurned >= 0 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidFood(data) {
+      return data.keys().hasAll(['userId', 'name', 'calories', 'timestamp']) &&
+             data.userId == 'guest_user' &&
+             data.name is string && data.name.size() <= 100 &&
+             data.calories is number && data.calories >= 0 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidInsight(data) {
+      return data.keys().hasAll(['userId', 'title', 'message', 'type', 'timestamp']) &&
+             data.userId == 'guest_user' &&
+             data.title is string && data.title.size() <= 100 &&
+             data.message is string && data.message.size() <= 1000 &&
+             data.type in ['recovery', 'nutrition', 'consistency'] &&
+             data.timestamp is timestamp;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().uid == existing().uid &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['weight', 'goal', 'displayName', 'email']);
+    }
+
+    // Workouts
+    match /workouts/{workoutId} {
+      allow list: if resource.data.userId == 'guest_user';
+      allow get: if existing().userId == 'guest_user';
+      allow create: if isValidWorkout(incoming()) && incoming().timestamp == request.time;
+      allow update: if existing().userId == 'guest_user' && isValidWorkout(incoming()) &&
+                    incoming().timestamp == existing().timestamp &&
+                    incoming().userId == existing().userId;
+      allow delete: if existing().userId == 'guest_user';
+    }
+
+    // Foods
+    match /foods/{foodId} {
+      allow list: if resource.data.userId == 'guest_user';
+      allow get: if existing().userId == 'guest_user';
+      allow create: if isValidFood(incoming()) && incoming().timestamp == request.time;
+      allow update: if existing().userId == 'guest_user' && isValidFood(incoming()) &&
+                    incoming().timestamp == existing().timestamp &&
+                    incoming().userId == existing().userId;
+      allow delete: if existing().userId == 'guest_user';
+    }
+
+    // Insights
+    match /insights/{insightId} {
+      allow list: if resource.data.userId == 'guest_user';
+      allow get: if existing().userId == 'guest_user';
+      allow create: if isValidInsight(incoming()) && incoming().timestamp == request.time;
+      allow update: if existing().userId == 'guest_user' && isValidInsight(incoming()) &&
+                    incoming().timestamp == existing().timestamp &&
+                    incoming().userId == existing().userId;
+      allow delete: if existing().userId == 'guest_user';
+    }
+  }
+}

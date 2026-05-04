@@ -1,0 +1,6 @@
+{
+  "name": "AI Fitness & Nutrition Tracker",
+  "description": "Smart mobile trainer with AI vision for food tracking, metabolic calorie burn calculation, and actionable fitness insights.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["AI Food Recognition", "Smart Workout Logging", "Glassmorphism UI"]
+}

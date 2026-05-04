@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with fitness goals",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "weight": { "type": "number", "description": "Weight in kg" },
+        "goal": { "type": "string", "enum": ["lose_weight", "maintain", "gain_muscle"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "weight", "goal", "createdAt"]
+    },
+    "Workout": {
+      "title": "Workout",
+      "description": "Recorded gym session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "exercise": { "type": "string" },
+        "variation": { "type": "string" },
+        "sets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "reps": { "type": "integer" },
+              "weight": { "type": "number" }
+            }
+          }
+        },
+        "caloriesBurned": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "exercise", "sets", "caloriesBurned", "timestamp"]
+    },
+    "Food": {
+      "title": "Food",
+      "description": "Recorded meal",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fats": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "calories", "timestamp"]
+    },
+    "Insight": {
+      "title": "Insight",
+      "description": "AI generated suggestions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["recovery", "nutrition", "consistency"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/workouts/{workoutId}": {
+      "schema": "Workout",
+      "description": "Individual workout logs"
+    },
+    "/foods/{foodId}": {
+      "schema": "Food",
+      "description": "Food and nutrition logs"
+    },
+    "/insights/{insightId}": {
+      "schema": "Insight",
+      "description": "AI generated insights for the user"
+    }
+  }
+}
